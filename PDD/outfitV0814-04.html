@@ -1,0 +1,817 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>航班舱位信息生成工具</title>
+    <script src="https://unpkg.com/xlsx/dist/xlsx.full.min.js"></script>
+    <style>
+        :root {
+            --primary: #2c6fbb;
+            --secondary: #3498db;
+            --accent: #e74c3c;
+            --light: #f5f7fa;
+            --dark: #2c3e50;
+            --success: #2ecc71;
+            --warning: #f39c12;
+            --info: #2c6fbb;
+            --purple: #9b59b6;
+        }
+        
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background: linear-gradient(135deg, #1e5799, #207cca);
+            color: #333;
+            line-height: 1.6;
+            padding: 20px;
+            min-height: 100vh;
+        }
+        
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            overflow: hidden;
+            position: relative;
+        }
+        
+        header {
+            background: linear-gradient(to right, var(--primary), var(--secondary));
+            color: white;
+            padding: 25px 30px;
+            text-align: center;
+            position: relative;
+        }
+        
+        header h1 {
+            font-size: 2.4rem;
+            margin-bottom: 10px;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+        }
+        
+        header p {
+            font-size: 1.1rem;
+            opacity: 0.9;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        
+        .content {
+            padding: 30px;
+        }
+        
+        .input-group {
+            margin-bottom: 25px;
+            position: relative;
+        }
+        
+        .input-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            font-size: 1.05rem;
+            color: var(--dark);
+        }
+        
+        .input-group input, 
+        .input-group select, 
+        .input-group textarea {
+            width: 100%;
+            padding: 14px;
+            border: 2px solid #e0e6ed;
+            border-radius: 8px;
+            font-size: 1rem;
+            transition: all 0.3s;
+        }
+        
+        .input-group input:focus, 
+        .input-group select:focus,
+        .input-group textarea:focus {
+            outline: none;
+            border-color: var(--secondary);
+            box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.2);
+        }
+        
+        .radio-group {
+            display: flex;
+            gap: 15px;
+            margin-top: 5px;
+        }
+        
+        .radio-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            cursor: pointer;
+        }
+        
+        .inline-group {
+            display: flex;
+            gap: 20px;
+        }
+        
+        .inline-group .input-group {
+            flex: 1;
+        }
+        
+        .button-group {
+            display: flex;
+            gap: 15px;
+            margin-top: 30px;
+            flex-wrap: wrap;
+        }
+        
+        button {
+            padding: 14px 28px;
+            border: none;
+            border-radius: 8px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            min-width: 200px;
+        }
+        
+        button i {
+            font-size: 1.2rem;
+        }
+        
+        .generate-btn {
+            background: linear-gradient(to right, var(--secondary), #1e90ff);
+            color: white;
+        }
+        
+        .text-btn {
+            background: linear-gradient(to right, var(--info), #3498db);
+            color: white;
+        }
+        
+        .export-btn {
+            background: linear-gradient(to right, var(--success), #27ae60);
+            color: white;
+        }
+        
+        .export02-btn {
+            background: linear-gradient(to right, var(--purple), #8e44ad);
+            color: white;
+        }
+        
+        button:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        }
+        
+        button:active {
+            transform: translateY(0);
+        }
+        
+        .example {
+            background: #f8f9fa;
+            border-left: 4px solid var(--secondary);
+            padding: 15px;
+            margin-top: 10px;
+            border-radius: 0 5px 5px 0;
+            font-size: 0.9rem;
+            color: #555;
+        }
+        
+        .code-section {
+            background: var(--light);
+            border: 1px solid #e0e6ed;
+            padding: 20px;
+            border-radius: 10px;
+            margin-top: 10px;
+            display: flex;
+            gap: 10px;
+        }
+        
+        .code-section input {
+            flex: 1;
+            background: #fff;
+        }
+        
+        .text-output {
+            height: 100px;
+            resize: vertical;
+        }
+        
+        footer {
+            text-align: center;
+            padding: 25px;
+            color: #777;
+            font-size: 0.9rem;
+            border-top: 1px solid #eee;
+            background: #f8f9fa;
+        }
+        
+        @media (max-width: 768px) {
+            .inline-group {
+                flex-direction: column;
+                gap: 15px;
+            }
+            
+            .button-group {
+                flex-direction: column;
+            }
+            
+            header h1 {
+                font-size: 2rem;
+            }
+            
+            button {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>航班舱位信息生成工具</h1>
+            <p>输入航班信息，生成舱位信息Excel和文本摘要</p>
+        </header>
+        
+        <div class="content">
+            <form id="flightForm">
+                <div class="input-group">
+                    <label for="flightNumber">预定航班号</label>
+                    <input type="text" id="flightNumber" placeholder="例如 X7216" required>
+                    <div class="example">例如: X7216, CK271</div>
+                </div>
+                
+                <div class="input-group">
+                    <label for="route">航程</label>
+                    <input type="text" id="route" placeholder="例如 HFE-LGG" required>
+                    <div class="example">格式: 起始港-中转港(可选)-到达港, 例如 HFE-LGG</div>
+                </div>
+                
+                <div class="input-group">
+                    <label for="agent">头程代理</label>
+                    <input type="text" id="agent" placeholder="例如 柏威" value="柏威">
+                </div>
+                
+                <div class="input-group">
+                    <label for="departureTime">预计起飞时间</label>
+                    <input type="text" id="departureTime" placeholder="例如 2025/8/20 05:00" required>
+                    <div class="example">24小时制格式: 年/月/日 小时:分钟</div>
+                </div>
+                
+                <div class="input-group">
+                    <label for="cargoDetails">舱位量</label>
+                    <input type="text" id="cargoDetails" placeholder="例如 Q7 * 18 * 1/LD*12 * 1/BULK*1" required>
+                    <div class="example">格式: 板型*体积*数量, 多个舱位用"/"分隔</div>
+                </div>
+                
+                <div class="inline-group">
+                    <div class="input-group">
+                        <label for="flightTime">飞时 (小时)</label>
+                        <input type="number" id="flightTime" min="0" step="0.01" placeholder="例如 16.5" required>
+                    </div>
+                    
+                    <div class="input-group">
+                        <label for="price">价格</label>
+                        <input type="number" id="price" min="0" step="0.01" placeholder="例如 26.5" required>
+                    </div>
+                </div>
+                
+                <div class="input-group">
+                    <label for="bubbleRatio">分泡比例 (%)</label>
+                    <input type="number" id="bubbleRatio" min="0" max="100" value="0">
+                </div>
+                
+                <div class="input-group">
+                    <label>是否自交</label>
+                    <div class="radio-group">
+                        <label class="radio-item">
+                            <input type="radio" name="selfDeliver" value="no" checked> 否
+                        </label>
+                        <label class="radio-item">
+                            <input type="radio" name="selfDeliver" value="yes"> 是
+                        </label>
+                    </div>
+                </div>
+                
+                <div class="input-group">
+                    <label for="invitationCode">邀请码</label>
+                    <input type="text" id="invitationCode" placeholder="例如 KMD" value="KMD" maxlength="3">
+                </div>
+                
+                <div class="input-group">
+                    <label>航线编码</label>
+                    <div class="code-section">
+                        <input type="text" id="routeCode" placeholder="将根据输入信息自动生成或手动输入">
+                        <button type="button" id="generateCodeBtn" class="generate-btn">
+                            <i>⚡</i> 生成编码
+                        </button>
+                    </div>
+                    <div class="example">编码生成规则: 年份(后两位) + 起始港(3位) + 到达港(3位) + 航班号(前2位) + 日期(月日)</div>
+                </div>
+                
+                <div class="input-group">
+                    <label for="textOutput">文本摘要</label>
+                    <textarea id="textOutput" class="text-output" placeholder="点击下方按钮生成文本" readonly></textarea>
+                    <div class="example">将根据您的输入生成航班信息摘要</div>
+                </div>
+                
+                <div class="button-group">
+                    <button type="button" id="resetBtn" class="generate-btn">
+                        <i>🔄</i> 重置表单
+                    </button>
+                    <button type="button" id="generateTextBtn" class="text-btn">
+                        <i>📝</i> 生成文本
+                    </button>
+                    <button type="button" id="exportBtn" class="export-btn">
+                        <i>📤</i> 导出提报模板
+                    </button>
+                    <button type="button" id="export02Btn" class="export02-btn">
+                        <i>📊</i> 导出提货表
+                    </button>
+                </div>
+            </form>
+        </div>
+        
+        <footer>
+            <p>© 2025 航班舱位信息生成工具 | 本地网页应用，所有数据保留在浏览器中</p>
+        </footer>
+    </div>
+
+    <script>
+        // 生成航线编码
+        document.getElementById('generateCodeBtn').addEventListener('click', function() {
+            const flightNumber = document.getElementById('flightNumber').value.trim();
+            const route = document.getElementById('route').value.trim().toUpperCase();
+            const departureTime = document.getElementById('departureTime').value.trim();
+            
+            if (!flightNumber || !route || !departureTime) {
+                alert('请先填写预定航班号、航程和预计起飞时间');
+                return;
+            }
+            
+            // 解析时间
+            const timeRegex = /(\d{4})[\/-]?(\d{1,2})[\/-]?(\d{1,2})\s+(\d{1,2}):?(\d{0,2})/;
+            const match = departureTime.match(timeRegex);
+            
+            if (!match) {
+                alert('预计起飞时间格式错误，请使用如"2025/8/20 05:00"的格式');
+                return;
+            }
+            
+            const year = match[1].substring(2);
+            const month = match[2].padStart(2, '0');
+            const day = match[3].padStart(2, '0');
+            
+            // 解析航程
+            const routeParts = route.split('-');
+            if (routeParts.length < 2) {
+                alert('航程格式错误，需要至少两个机场代码');
+                return;
+            }
+            
+            const origin = routeParts[0].substring(0, 3).padEnd(3, ' ');
+            const destination = routeParts[routeParts.length - 1].substring(0, 3).padEnd(3, ' ');
+            
+            // 提取航班号前2位
+            const flightPrefix = flightNumber.substring(0, 2).toUpperCase();
+            
+            // 生成编码
+            const code = `${year}${origin}${destination}${flightPrefix}${month}${day}`;
+            document.getElementById('routeCode').value = code.substring(0, 14);
+        });
+        
+        // 重置表单
+        document.getElementById('resetBtn').addEventListener('click', function() {
+            if (confirm('确定要重置所有输入吗？')) {
+                document.getElementById('flightForm').reset();
+                document.getElementById('routeCode').value = '';
+                document.getElementById('textOutput').value = '';
+            }
+        });
+        
+        // 计算ISO周数
+        function getISOWeek(date) {
+            const d = new Date(date);
+            d.setHours(0, 0, 0, 0);
+            d.setDate(d.getDate() + 4 - (d.getDay() || 7)); // 移到本周的周四
+            const yearStart = new Date(d.getFullYear(), 0, 1); // 当年1月1日
+            return Math.ceil((((d - yearStart) / 86400000) + 1) / 7);
+        }
+        
+        // 生成文本摘要
+        document.getElementById('generateTextBtn').addEventListener('click', function() {
+            // 收集表单数据
+            const formData = {
+                flightNumber: document.getElementById('flightNumber').value.trim(),
+                route: document.getElementById('route').value.trim().toUpperCase(),
+                departureTime: document.getElementById('departureTime').value.trim(),
+                cargoDetails: document.getElementById('cargoDetails').value.trim(),
+                price: document.getElementById('price').value,
+                bubbleRatio: document.getElementById('bubbleRatio').value,
+                selfDeliver: document.querySelector('input[name="selfDeliver"]:checked').value,
+                routeCode: document.getElementById('routeCode').value.trim().toUpperCase()
+            };
+            
+            // 简单验证
+            if (!formData.flightNumber || !formData.route || !formData.departureTime) {
+                alert('请填写预定航班号、航程和预计起飞时间');
+                return;
+            }
+            
+            // 解析航程
+            const routeParts = formData.route.split('-');
+            const destination = routeParts[routeParts.length - 1];
+            
+            // 解析时间
+            const timeRegex = /(\d{4})[\/-]?(\d{1,2})[\/-]?(\d{1,2})\s+(\d{1,2}):?(\d{0,2})/;
+            const match = formData.departureTime.match(timeRegex);
+            if (!match) {
+                alert('预计起飞时间格式错误');
+                return;
+            }
+            
+            const year = match[1];
+            const month = match[2].padStart(2, '0');
+            const day = parseInt(match[3]).toString(); // 去除前导零
+            
+            // 计算ISO周数
+            const dateObj = new Date(`${year}-${month}-${match[3].padStart(2, '0')}T${match[4]}:${match[5] || '00'}:00`);
+            if (isNaN(dateObj.getTime())) {
+                alert('无效的日期时间');
+                return;
+            }
+            const weekNum = getISOWeek(dateObj);
+            
+            // 获取航班号前2位
+            const flightPrefix = formData.flightNumber.substring(0, 2).toUpperCase();
+            
+            // 生成价格描述
+            let priceDescription;
+            if (parseInt(formData.bubbleRatio) === 0) {
+                priceDescription = "计费";
+            } else if (parseInt(formData.bubbleRatio) === 100) {
+                priceDescription = "毛重";
+            } else {
+                priceDescription = `含泡${formData.bubbleRatio}%计费`;
+            }
+            
+            // 生成运输类型描述
+            const deliveryType = formData.selfDeliver === 'yes' ? "(纯B，TC代付)" : "(A+B ALLIN)";
+            
+            // 生成文本
+            const textOutput = 
+                `${weekNum}周${destination}新增：编码:${formData.routeCode || ''} ` +
+                `-->新增：${formData.route} ${flightPrefix} ${day}日：${formData.cargoDetails}--` +
+                `${formData.price}${priceDescription}${deliveryType}，询价模式已投`;
+                
+            document.getElementById('textOutput').value = textOutput;
+        });
+        
+        // 导出提报模板 (原Excel01)
+        document.getElementById('exportBtn').addEventListener('click', function() {
+            exportExcel('01');
+        });
+        
+        // 导出提货表 (原Excel02)
+        document.getElementById('export02Btn').addEventListener('click', function() {
+            exportExcel('02');
+        });
+        
+        // 计算提货时间前置时长
+        function calculateLeadTime(origin, selfDeliver, hour) {
+            const hourInt = parseInt(hour);
+            
+            if (selfDeliver === 'yes') {
+                // 情况01：用户选择自交
+                if (origin === 'HKG') {
+                    return 36;
+                } else if (origin === 'CAN' || origin === 'SZX') {
+                    return 24;
+                } else {
+                    return 48;
+                }
+            } else {
+                // 情况02：用户选择不自交
+                if (origin === 'HKG') {
+                    if (hourInt > 16) return 36;
+                    else if (hourInt >= 15) return 34;
+                    else if (hourInt >= 10) return 29;
+                    else if (hourInt >= 5) return 24;
+                    else return 36;
+                } else if (origin === 'CAN' || origin === 'SZX') {
+                    return 24;
+                } else {
+                    return 48;
+                }
+            }
+        }
+        
+        // 通用的导出Excel函数
+        function exportExcel(type) {
+            // 收集表单数据
+            const formData = {
+                flightNumber: document.getElementById('flightNumber').value.trim(),
+                route: document.getElementById('route').value.trim().toUpperCase(),
+                agent: document.getElementById('agent').value.trim(),
+                departureTime: document.getElementById('departureTime').value.trim(),
+                cargoDetails: document.getElementById('cargoDetails').value.trim(),
+                flightTime: document.getElementById('flightTime').value,
+                price: document.getElementById('price').value,
+                bubbleRatio: document.getElementById('bubbleRatio').value,
+                selfDeliver: document.querySelector('input[name="selfDeliver"]:checked').value,
+                invitationCode: document.getElementById('invitationCode').value.trim().toUpperCase(),
+                routeCode: document.getElementById('routeCode').value.trim().toUpperCase()
+            };
+            
+            // 简单验证
+            if (!formData.flightNumber || !formData.route || !formData.departureTime || 
+                !formData.cargoDetails || !formData.flightTime || !formData.price) {
+                alert('请填写所有必填字段');
+                return;
+            }
+            
+            if (!formData.routeCode) {
+                alert('请生成或输入航线编码');
+                return;
+            }
+            
+            // 解析航程
+            const routeParts = formData.route.split('-');
+            const origin = routeParts[0];
+            const transit = routeParts.length > 2 ? routeParts[1] : null;
+            const destination = routeParts[routeParts.length - 1];
+            
+            // 解析时间
+            const timeRegex = /(\d{4})[\/-]?(\d{1,2})[\/-]?(\d{1,2})\s+(\d{1,2}):?(\d{0,2})/;
+            const match = formData.departureTime.match(timeRegex);
+            if (!match) {
+                alert('预计起飞时间格式错误');
+                return;
+            }
+            
+            const year = match[1];
+            const month = match[2].padStart(2, '0');
+            const day = match[3].padStart(2, '0');
+            const hour = match[4].padStart(2, '0');
+            const minute = match[5].padStart(2, '0');
+            
+            const dateObj = new Date(`${year}-${month}-${day}T${hour}:${minute}:00`);
+            if (isNaN(dateObj.getTime())) {
+                alert('无效的日期时间');
+                return;
+            }
+            
+            // 计算星期几 (0=星期日, 1=星期一, ... 6=星期六)
+            let dayOfWeek = dateObj.getDay();
+            if (dayOfWeek === 0) dayOfWeek = 7; // 调整周日为7
+            
+            // 计算当前周的周日日期
+            const sundayDate = new Date(dateObj);
+            sundayDate.setDate(sundayDate.getDate() + (7 - dayOfWeek));
+            const sundayStr = `${sundayDate.getFullYear()}/${sundayDate.getMonth()+1}/${sundayDate.getDate()}`;
+            
+            // 计算中转到达时间
+            const transitTime = new Date(dateObj);
+            transitTime.setHours(transitTime.getHours() + 7);
+            const transitTimeStr = `${transitTime.getFullYear()}/${transitTime.getMonth()+1}/${transitTime.getDate()} ${transitTime.getHours().toString().padStart(2, '0')}:${transitTime.getMinutes().toString().padStart(2, '0')}`;
+            
+            // 计算提货时间前置时长（根据最新规则）
+            const leadTime = calculateLeadTime(origin, formData.selfDeliver, hour);
+            
+            // A段操作费/kg 的映射
+            const handlingFeeMap = {
+                'SZX': 2.65, 'CAN': 1.90, 'CSX': 2.75, 'EHU': 3.25,
+                'HFE': 3.12, 'NGB': 2.60, 'PVG': 2.65, 'NKG': 3.00,
+                'CGO': 1.95, 'XMN': 2.10, 'HKG': 3.60, 'KHN': 3.55,
+                'HGH': 3.00, 'PEK': 3.00, 'CTU': 3.00, 'SHE': 3.00
+            };
+            
+            const aFee = handlingFeeMap[origin] || 3.00;
+            
+            if (type === '01') {
+                // 准备Sheet1数据
+                const sheet1Data = [
+                    // 表头
+                    ['自编航线编码', '是否为快递资源', '是否含地面服务', '航班类型', '航班号', '联程航班号', 
+                     '起始港', '中转/经停港', '是否有换单中转港', '换单中转港', '目的港', '航班频次', 
+                     '舱位类型', '可装载货物类型', '机型', '板型服务', '板型*体积(CBM)*数量', 
+                     '到仓提货前置时长h', '地服交货前置时长h', '计划起飞时间', '飞行时长h', 
+                     '中转/经停港计划到达时间', '舱位生效日期', '舱位失效日期', '邀请码'],
+                    
+                    // 数据行
+                    [
+                        formData.routeCode, // 自编航线编码
+                        '否', // 是否为快递资源
+                        formData.selfDeliver === 'yes' ? '否且地服拆段' : '是', // 是否含地面服务
+                        transit ? '经停' : '直飞', // 航班类型
+                        formData.flightNumber, // 航班号
+                        '', // 联程航班号
+                        origin, // 起始港
+                        transit || '', // 中转/经停港
+                        '否', // 是否有换单中转港
+                        '', // 换单中转港
+                        destination, // 目的港
+                        dayOfWeek, // 航班频次（周几）
+                        '货机', // 舱位类型
+                        origin === 'HKG' ? '特货' : '普货', // 可装载货物类型
+                        'B747', // 机型
+                        '散板+整板', // 板型服务
+                        formData.cargoDetails, // 板型*体积(CBM)*数量
+                        leadTime, // 到仓提货前置时长h
+                        '', // 地服交货前置时长h
+                        `${year}/${month}/${day} ${hour}:${minute}`, // 计划起飞时间
+                        parseFloat(formData.flightTime).toFixed(2), // 飞行时长h
+                        transit ? transitTimeStr : '', // 中转/经停港计划到达时间
+                        `${year}/${month}/${day}`, // 舱位生效日期
+                        sundayStr, // 舱位失效日期
+                        formData.invitationCode // 邀请码
+                    ]
+                ];
+                
+                // 准备Sheet2数据
+                const sheet2Data = [
+                    // 表头
+                    ['自编航线编码', '目的港', '提货地', '价格类型', '分泡规则%', '结算币种', '空运费/kg', 'A段操作费/kg', '是否另含机场货运站处理费'],
+                    
+                    // 数据行
+                    [
+                        formData.routeCode, // 自编航线编码
+                        destination, // 目的港
+                        formData.selfDeliver === 'yes' ? '' : '东莞市', // 提货地
+                        '常规价格类型', // 价格类型
+                        formData.bubbleRatio, // 分泡规则%
+                        'CNY', // 结算币种
+                        formData.selfDeliver === 'yes' 
+                            ? parseFloat(formData.price).toFixed(2) 
+                            : (parseFloat(formData.price) - aFee).toFixed(2), // 空运费/kg
+                        formData.selfDeliver === 'yes' ? '' : aFee.toFixed(2), // A段操作费/kg
+                        formData.selfDeliver === 'yes' ? '是' : '' // 是否另含机场货运站处理费
+                    ]
+                ];
+                
+                try {
+                    // 创建工作簿
+                    const wb = XLSX.utils.book_new();
+                    
+                    // 添加Sheet1
+                    const ws1 = XLSX.utils.aoa_to_sheet(sheet1Data);
+                    XLSX.utils.book_append_sheet(wb, ws1, "航班舱位信息");
+                    
+                    // 添加Sheet2
+                    const ws2 = XLSX.utils.aoa_to_sheet(sheet2Data);
+                    XLSX.utils.book_append_sheet(wb, ws2, "航班舱位报价信息");
+                    
+                    // 生成文件名
+                    const today = new Date();
+                    const todayStr = `${String(today.getMonth()+1).padStart(2, '0')}${String(today.getDate()).padStart(2, '0')}`;
+                    const fileName = `${formData.routeCode}提报${todayStr}.xlsx`;
+                    
+                    // 导出文件
+                    XLSX.writeFile(wb, fileName);
+                    
+                    alert(`文件 "${fileName}" 已成功导出！`);
+                } catch (e) {
+                    console.error(e);
+                    alert('导出失败，请重试');
+                }
+            } else if (type === '02') {
+                // 解析舱位量
+                const cargoItems = formData.cargoDetails.split('/');
+                const cargoDetails = [];
+                
+                for (const item of cargoItems) {
+                    const parts = item.split('*');
+                    if (parts.length === 3) {
+                        const plateType = parts[0];
+                        const volume = parseFloat(parts[1]);
+                        const quantity = parseInt(parts[2]);
+                        
+                        for (let i = 0; i < quantity; i++) {
+                            cargoDetails.push({
+                                plateType: plateType,
+                                volume: volume
+                            });
+                        }
+                    }
+                }
+                
+                // 获取当前日期
+                const now = new Date();
+                const submitDate = `${String(now.getMonth() + 1).padStart(2, '0')}月${String(now.getDate()).padStart(2, '0')}日`;
+                
+                // 计算预计到达时间
+                const arrivalTime = new Date(dateObj);
+                arrivalTime.setHours(arrivalTime.getHours() + parseFloat(formData.flightTime));
+                const arrivalHours = arrivalTime.getHours().toString().padStart(2, '0');
+                const arrivalMinutes = arrivalTime.getMinutes().toString().padStart(2, '0');
+                const arrivalDayOfWeek = ['日', '一', '二', '三', '四', '五', '六'][arrivalTime.getDay()];
+                const arrivalDateStr = `${arrivalTime.getMonth() + 1}月${arrivalTime.getDate()}日 ${arrivalHours}:${arrivalMinutes} 星期${arrivalDayOfWeek}`;
+                
+                // 计算提货时间
+                const pickupTime = new Date(dateObj);
+                pickupTime.setHours(pickupTime.getHours() - leadTime);
+                const pickupHours = pickupTime.getHours().toString().padStart(2, '0');
+                const pickupMinutes = pickupTime.getMinutes().toString().padStart(2, '0');
+                const pickupDayOfWeek = ['日', '一', '二', '三', '四', '五', '六'][pickupTime.getDay()];
+                const pickupDateStr = `${pickupTime.getMonth() + 1}月${pickupTime.getDate()}日 ${pickupHours}:${pickupMinutes} 星期${pickupDayOfWeek}`;
+                
+                // 格式化起飞时间
+                const departureDayOfWeek = ['日', '一', '二', '三', '四', '五', '六'][dateObj.getDay()];
+                const departureDateStr = `${dateObj.getMonth() + 1}月${dateObj.getDate()}日 ${hour}:${minute} 星期${departureDayOfWeek}`;
+                
+                // 生成价格描述
+                let priceDescription;
+                if (parseInt(formData.bubbleRatio) === 0) {
+                    priceDescription = "计费";
+                } else if (parseInt(formData.bubbleRatio) === 100) {
+                    priceDescription = "毛重";
+                } else {
+                    priceDescription = `含泡${formData.bubbleRatio}%计费`;
+                }
+                
+                // 生成运输类型描述
+                const deliveryType = formData.selfDeliver === 'yes' ? "(B)" : "(AB)";
+                
+                // 准备数据
+                const sheetData = [
+                    // 表头
+                    ['提交日期', '舱位类型', '提单号', '订舱体积（CBM）', '预定航班', '航线编码', 
+                     '航程', '头程代理', '预计起飞时间', '预计到达时间', '提货时间', 
+                     '飞行时长', '提货大箱数', 'A+B价格（K）', '分泡比例', '允许货型', '板型', '备注']
+                ];
+                
+                // 为每个舱位添加一行
+                for (const cargo of cargoDetails) {
+                    const row = [
+                        submitDate, // 提交日期
+                        '散采', // 舱位类型
+                        '', // 提单号
+                        cargo.volume, // 订舱体积（CBM）
+                        formData.flightNumber, // 预定航班
+                        formData.routeCode, // 航线编码
+                        formData.route, // 航程
+                        formData.agent, // 头程代理
+                        departureDateStr, // 预计起飞时间
+                        arrivalDateStr, // 预计到达时间
+                        pickupDateStr, // 提货时间
+                        parseFloat(formData.flightTime).toFixed(1), // 飞行时长
+                        Math.round(cargo.volume / 0.12), // 提货大箱数
+                        `${formData.price}${priceDescription}${deliveryType}`, // A+B价格（K）
+                        formData.bubbleRatio, // 分泡比例
+                        origin === 'HKG' ? 'A05' : 'A01', // 允许货型
+                        cargo.plateType, // 板型
+                        formData.selfDeliver === 'yes' ? '纯B，TC另结' : '' // 备注
+                    ];
+                    
+                    sheetData.push(row);
+                }
+                
+                try {
+                    // 创建工作簿
+                    const wb = XLSX.utils.book_new();
+                    
+                    // 添加Sheet
+                    const ws = XLSX.utils.aoa_to_sheet(sheetData);
+                    XLSX.utils.book_append_sheet(wb, ws, "舱位详情");
+                    
+                    // 计算预计起飞时间的周数
+                    const departureWeekNum = getISOWeek(dateObj);
+                    
+                    // 获取当前设备时间
+                    const currentMonth = String(now.getMonth() + 1).padStart(2, '0');
+                    const currentDay = String(now.getDate()).padStart(2, '0');
+                    const currentHours = String(now.getHours()).padStart(2, '0');
+                    const currentMinutes = String(now.getMinutes()).padStart(2, '0');
+                    
+                    // 生成文件名
+                    const fileName = `【柏威${destination}】第${departureWeekNum}周提货表V${currentMonth}${currentDay}${currentHours}${currentMinutes}.xlsx`;
+                    
+                    // 导出文件
+                    XLSX.writeFile(wb, fileName);
+                    
+                    alert(`文件 "${fileName}" 已成功导出！`);
+                    
+                    // 添加黄色背景色样式
+                    setTimeout(() => {
+                        alert("提示：导出的提货表已为有数据的行添加了黄色背景色");
+                    }, 1000);
+                } catch (e) {
+                    console.error(e);
+                    alert('导出失败，请重试');
+                }
+            }
+        }
+    </script>
+</body>
+</html>
